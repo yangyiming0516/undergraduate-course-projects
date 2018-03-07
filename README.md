@@ -69,3 +69,5 @@ see details in readme
 K-means algorithm to cluster text and image data  
 the text cluster is written in C++, tf / tfidf are used as feature vectors  
 the image cluster is written in matlab, hsd / rgb features are used.
+
+## robot navigation
