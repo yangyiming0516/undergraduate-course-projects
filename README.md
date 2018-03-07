@@ -53,4 +53,12 @@ see details on VAST challenge 08 [official site](https://www.cs.umd.edu/hcil/VAS
 ![sample2](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample2.png) 
 
 ## Natural Language Processing
-some basic nlp problems such as Ngrams and Backoff Models, word segmentation(Chinese)
+some basic nlp problems such as Ngrams and Backoff Models, word segmentation(Chinese)  
+The codes are written in C++
+### ngram, smoothing, backoff
+algorithm to judge which one of two sentences is a real and correct sentence.  
+Count the frequencies of unigram and bigram. calculate the probability of a sentence based on the frequencies.  
+smooth the counts with add-del or good-turing smoothing.  
+tried add-del+backoff and good-turing + katz backoff  
+see details in readme
+### word segmentation(Chinese)
