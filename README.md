@@ -41,4 +41,4 @@ A heatmap shows the distribution of the messages posted. Areas can be chosen.
 A trend chart shows the amount of weibo posted one different time. Time scopes can be chosen.
 ![time](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/weibo/time.png)  
 Histograms show the amount of weibo selected by area or time. There are also functions such as animation or zooming of the time axis.  
-![animation](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/weibo/animation.gif) 
+![animation](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/weibo/Animation.gif) 
