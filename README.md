@@ -49,5 +49,7 @@ Histograms show the amount of weibo selected by area or time. There are also fun
 VAST 2008 Mini Challenge-1, Wiki Editors
 see details on VAST challenge 08 [official site](https://www.cs.umd.edu/hcil/VASTchallenge08/tasks.html)
 #### design
-![sample1](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample1.gif) 
-![sample2](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample2.gif) 
+![sample1](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample1.png)  
+![sample2](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample2.png) 
+
+## 
