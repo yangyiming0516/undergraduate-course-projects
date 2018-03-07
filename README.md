@@ -24,7 +24,7 @@ the charts are interactive so different parts of the data can be added to the li
 #### dataset
 High-dimensional data of multiple attributes of different of wine
 #### design
-![sample](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/wine/sample1.png)  
+![sample](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/wine/sample.png)  
 Parallel axis chart is used, the axis can be dragged.  
 A scatter chart is used to observe the relation between two specific attributes, the attributes can be chosen.  
 The amount of different kinds of wine selected are displayed by histograms.  
@@ -42,3 +42,12 @@ A trend chart shows the amount of weibo posted one different time. Time scopes c
 ![time](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/weibo/time.png)  
 Histograms show the amount of weibo selected by area or time. There are also functions such as animation or zooming of the time axis.  
 ![animation](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/weibo/Animation.gif) 
+
+### VAST 2008 Challenge 1
+[demo link](http://vis.pku.edu.cn/course/Visualization_2014F/vast2008/group4/c1/)
+#### dataset
+VAST 2008 Mini Challenge-1, Wiki Editors
+see details on VAST challenge 08 [official site](https://www.cs.umd.edu/hcil/VASTchallenge08/tasks.html)
+#### design
+![sample1](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample1.gif) 
+![sample2](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample2.gif) 

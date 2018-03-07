@@ -1,0 +1,295 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>VAST2008-1</title>
+<script language="javascript" src="d3.js"></script>
+</head>
+<style>
+
+svg {
+  font: 10px sans-serif;
+}
+
+.area {
+  fill: steelblue;
+  clip-path: url(#clip);
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.brush .extent {
+  stroke: #fff;
+  fill-opacity: .125;
+  shape-rendering: crispEdges;
+}
+
+.chord {
+  fill-opacity: .8;
+}
+
+</style>
+
+<body>
+<table border="0">
+<tr>
+	<td>
+	<div id="select"></div>
+	</td>
+	<td id="time"></td>
+</tr>
+</table>
+<form>
+显示类型
+<select id="sel" onchange="draw()">
+<option value="yes">支持</option>
+<option value="no">反对</option>
+</select>
+</form>
+
+<div id="chorddiv"></div>
+<div id="text"></div>
+<script>
+	var margin = {top: 10, right: 10, bottom: 100, left: 40},
+		width = 800 - margin.left - margin.right,
+		height = 250 - margin.top - margin.bottom;
+	var x = d3.time.scale().range([0, width]),
+		y = d3.scale.linear().range([height, 0]);
+	var xAxis = d3.svg.axis().scale(x).orient("bottom"),
+		yAxis = d3.svg.axis().scale(y).orient("left");
+	var brush = d3.svg.brush()
+		.x(x)
+		.on("brushend", brushed);
+	var svg = d3.select("#select").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom);	
+	var area=d3.svg.area()
+		.interpolate("monotone")
+		.x(function(d) { return x(d.date); })
+		.y0(height)
+		.y1(function(d) { return y(d.num); });
+	var select = svg.append("g")
+		.attr("class", "select")
+		.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	var parseDate = d3.time.format("%Y %m %d").parse;
+	var parseDate2 = d3.time.format("%d %B %Y").parse;
+	var log=[];
+	var time=[];
+	var from=[];
+	var yes=[];
+	var no=[];
+	var chosen=[];
+	var matrix;
+	var timeL,timeR;
+	function type(d) {
+		d.date = parseDate(d.date);
+		d.num = +d.num;
+		return d;
+	}	
+	function brushed() {
+		timeL=brush.extent()[0];
+		timeR=brush.extent()[1];
+		if (brush.empty()){
+		timeL=x.domain()[0];
+		timeR=x.domain()[1];
+		}
+		document.getElementById("time").innerHTML="查询范围"+"<br/>"+brush.extent()[0]+"<br/>"+"to"+"<br/>"+brush.extent()[1];
+		draw();
+	}
+	
+	d3.csv("count.csv",type,function(error,data){
+		x.domain(d3.extent(data.map(function(d) { return d.date; })));
+		timeL=x.domain()[0];
+		timeR=x.domain()[1];
+		y.domain([0, d3.max(data.map(function(d) { return d.num; }))]);
+		select.append("path")
+			.datum(data)
+			.attr("class", "area")
+			.attr("d", area);
+		select.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + height + ")")
+			.call(xAxis);
+		select.append("g")
+			.attr("class", "y axis")
+			.call(yAxis);
+		select.append("g")
+			.attr("class", "x brush")
+			.call(brush)
+			.selectAll("rect")
+			.attr("y", -5)
+			.attr("height", height + 5);
+			
+		d3.csv("data.csv",type2,function(error,data){
+		for(var i in data){
+			log[data[i].num]=data[i].inf;
+		}
+
+		d3.csv("time.csv",type3,function(e,d){
+		for(var i in d){
+			time[d[i].num]=d[i].time;
+		}
+		d3.csv("a.csv",type2,function(ee,dd){
+		for(var i in dd){
+			from[dd[i].num]=dd[i].from;
+			yes[dd[i].num]=dd[i].yes;
+			no[dd[i].num]=dd[i].no;
+		}
+		draw();
+		});
+		});
+		});
+	
+	}
+	);
+	
+	function type2(d) {
+		d.num = +d.num;
+		return d;
+	}	
+	function type3(d) {
+		d.time = parseDate2(d.time);
+		d.num = +d.num;
+		return d;
+	}	
+	
+	function draw(){
+		if (document.getElementById("chord")){
+			var t=document.getElementById("chord");
+			document.getElementById("chorddiv").removeChild(t);
+		}
+		var ch;
+		if (document.getElementById("sel").value=="yes") ch=1;else ch=0;
+		var indexByName = d3.map(),nameByIndex=d3.map();
+		var n=0;
+		for (var i in from) chosen[i]=0;
+		for (var i in from){
+			if (time[i]>timeL && time[i]<timeR){
+				if ((ch==1 && yes[i]!="0")||(ch==0 && no[i]!="0")){
+					chosen[i]=1;
+					if (!indexByName.has(from[i])){
+						nameByIndex.set(n,from[i]);
+						 indexByName.set(from[i], n++);
+						 console.log(n,from[i]);
+						 }
+					if (ch==1)
+						if (!indexByName.has(yes[i])){
+						nameByIndex.set(n,yes[i]);
+						 indexByName.set(yes[i], n++);
+
+						 }
+					if (ch==0)
+						if (!indexByName.has(no[i])){
+						nameByIndex.set(n,no[i]);
+						 indexByName.set(no[i], n++);
+						 console.log(n,no[i]);
+						 }
+			}	
+			}
+		}
+		matrix=[];
+		for (var i=0;i<n;i++){
+			matrix[i]=[];
+			for (var j=0;j<n;j++)	matrix[i][j]=0;
+		}
+		for (var i in time){
+			if (chosen[i]==1)
+				if ((ch==1 && yes[i]!="0")||(ch==0 && no[i]!="0")){
+					if (ch==1){
+						matrix[indexByName.get(from[i])][indexByName.get(yes[i])]++;
+					}
+					if (ch==0)
+						matrix[indexByName.get(from[i])][indexByName.get(no[i])]++;
+			}	
+		}
+
+		var width = 1000,
+		height = 1000,
+		innerRadius = Math.min(width, height) * .41,
+		outerRadius = innerRadius * 1.1;
+		
+		var chord = d3.layout.chord()
+			.padding(.01)
+			.sortSubgroups(d3.descending)
+			.sortChords(d3.descending)
+			.matrix(matrix);
+			
+		var arc = d3.svg.arc()
+			.innerRadius(innerRadius)
+			.outerRadius(innerRadius + 20);
+	
+		var fill=d3.scale.category20c();
+		
+		var svg = d3.select("#chorddiv").append("svg")
+		.attr("width", width)
+		.attr("height", height)
+		.attr("id","chord")
+		.append("g")
+		.attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+		
+		 var g = svg.selectAll(".group")
+			.data(chord.groups)
+			.enter().append("g")
+			.attr("class", "group");
+		
+		function fade(opacity) {
+			return function(g, i) {
+			svg.selectAll(".chord")
+			.filter(function(d) { return d.source.index != i && d.target.index != i; })
+			.transition()
+			.style("opacity", opacity);
+			};
+		}
+		
+
+		g.append("path")
+			.style("fill", function(d) { return fill(d.index); })
+			.style("stroke", function(d) { return fill(d.index); })
+			.attr("d", arc)
+			.on("mouseover", fade(.1))
+			.on("mouseout", fade(1))
+			.on("click",logtext());
+			
+		function logtext(){
+			return function(d, i) {
+			 var name=nameByIndex.get(d.index);
+			 document.getElementById("text").innerHTML="";
+			 for (var i in from){
+				if (chosen[i]==1){
+					if (from[i]==name ||(ch==1&&yes[i]==name)||(ch==0&&no[i]==name)){
+						
+						document.getElementById("text").innerHTML+="<br/>"+log[i];
+						}
+				}
+			 }
+			};
+		}
+		
+		g.append("text")
+			.each(function(d) { d.angle = (d.startAngle + d.endAngle) / 2; })
+			.attr("dy", ".35em")
+			.attr("transform", function(d) {
+				return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
+					+ "translate(" + (innerRadius + 26) + ")"
+					+ (d.angle > Math.PI ? "rotate(180)" : "");
+				})
+			.style("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
+			.text(function(d) {return nameByIndex.get(d.index); });
+			
+		 svg.selectAll(".chord")
+			.data(chord.chords)
+			.enter().append("path")
+			.attr("class", "chord")
+			.style("stroke", function(d) { return d3.rgb(fill(d.source.index)).darker(); })
+			.style("fill", function(d) { return fill(d.source.index); })
+			.attr("d", d3.svg.chord().radius(innerRadius));
+	}
+	
+
+</script>
+</body>
