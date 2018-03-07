@@ -1,0 +1,388 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>wine data</title>
+<style type="text/css">
+circle {
+  fill: #ccc;
+  fill-opacity: 0.5;
+}
+circle.kind1 {
+  fill: #F00;
+}
+
+circle.kind2 {
+  fill: #0F0;
+}
+
+circle.kind3 {
+  fill: #00F;
+}
+path{
+  fill: none;
+  stroke: #ccc;
+  stroke-opacity: 0.5;
+}
+path.kind1{
+  stroke: #F00;
+}
+path.kind2{
+  stroke: #0F0;
+}
+path.kind3{
+  stroke: #00F;
+}
+rect.extent {
+  fill: #000;
+  fill-opacity: .125;
+  stroke: #fff;
+}
+rect.kind1 {
+  fill: #F00;
+}
+
+rect.kind2 {
+  fill: #0F0;
+}
+
+rect.kind3 {
+  fill: #00F;
+}
+rect.
+</style>
+<script language="javascript" src="d3.js"></script>
+</head>
+
+<body onload="init()">
+<table border="0">
+<tr>
+	<td id="xtd">
+		x轴
+		<br />
+		<form>
+			<select id="xselect" onchange="drawsplom()">
+			<option value="1">Alcohol</option>
+			<option value="2">Malic acid</option>
+			<option value="3">Ash</option>
+			<option value="4">Alcalinity</option>
+			<option value="5">Magnesium</option>
+			<option value="6">Total phenols</option>
+			<option value="7">Flavanoids</option>
+			<option value="8">Nonflavanoid phenols</option>
+			<option value="9">Proanthocyanins</option>
+			<option value="10">Color intensity</option>
+			<option value="11">Hue</option>
+			<option value="12">OD280/OD315</option>
+			<option value="13">Proline</option>
+			</select>
+		</form>
+	</td>
+	<td id="splomtd" rowspan="3"></td>
+	<td id="recttd" rowspan="3"></td>
+</tr>
+<tr>
+	<td id="ytd">
+		y轴
+		<br />
+		<form>
+			<select id="yselect" onchange="drawsplom()">
+			<option value="1">Alcohol</option>
+			<option value="2">Malic acid</option>
+			<option value="3">Ash</option>
+			<option value="4">Alcalinity</option>
+			<option value="5">Magnesium</option>
+			<option value="6">Total phenols</option>
+			<option value="7">Flavanoids</option>
+			<option value="8">Nonflavanoid phenols</option>
+			<option value="9">Proanthocyanins</option>
+			<option value="10">Color intensity</option>
+			<option value="11">Hue</option>
+			<option value="12">OD280/OD315</option>
+			<option value="13">Proline</option>
+			</select>
+		</form>
+	</td>
+</tr>
+<tr>
+	<td id="chtd">
+		数据选择
+		<br />
+		<form>
+			<select id="chselect" onchange="choose()">
+			<option value="0">手动选择</option>
+			<option value="1">种类1</option>
+			<option value="2">种类2</option>
+			<option value="3">种类3</option>
+			</select>
+		</form>
+	</td>
+</tr>
+<tr>
+	<td colspan=3 id="paralleltd"></td>
+</tr>
+</table>
+</body>
+
+<script>
+var csvdata=[],
+	traits = ["1", "2", "3", "4","5","6","7","8","9","10","11","12","13"];
+	ptraits = ["1", "2", "3", "4","5","6","7","8","9","10","11","12","13"];
+var xscale={},yscale={},pbrush={},pscale={};
+function drawsplom(){
+	var axis = d3.svg.axis()
+		.ticks(10);
+	var brush = d3.svg.brush()
+		.on("brush", brush)
+		.on("brushend", brushend);
+	if (document.getElementById("splomsvg")){
+		var t=document.getElementById("splomsvg");
+		t.parentNode.removeChild(t);
+	}
+	var svg = d3.select("#splomtd").append("svg")
+      .attr("width", 500)
+      .attr("height",500)
+	  .attr("id","splomsvg");
+	var nx=(+document.getElementById("xselect").value)-1.
+		ny=(+document.getElementById("yselect").value)-1;
+    svg.append("g")
+      .attr("class", "xaxis")
+      .attr("transform", "translate(0,455)")
+      .call(axis.scale(xscale[traits[nx]]).orient("bottom")); 
+	svg.append("g")
+      .attr("class", "yaxis")
+      .attr("transform", "translate(455,0)")
+      .call(axis.scale(yscale[traits[ny]]).orient("right"));
+	  
+	var points=svg.selectAll("circle")
+				.data(csvdata)
+				.enter()
+				.append("circle")
+				.attr("cx", function(d) { return xscale[traits[nx]](d[traits[nx]]); })
+				.attr("cy", function(d) { return yscale[traits[ny]](d[traits[ny]]); })
+				.attr("r", 3)
+				.attr("class", function(d) { 
+									if (d.chosen)
+									return d.kind;
+									else return "none"
+									});
+	svg.call(brush.x(xscale[traits[nx]]).y(yscale[traits[ny]]));
+	function brush() {
+		var e = brush.extent();
+		svg.selectAll("circle").attr("class", function(d) {
+			if (e[0][0] <= d[traits[nx]] && d[traits[nx]] <= e[1][0]
+			&& e[0][1] <= d[traits[ny]] && d[traits[ny]] <= e[1][1])
+			{d.chosen=1; return  d.kind;}
+			else{d.chosen=0; return  "none";}
+		});
+		drawparallel();
+		drawrect();
+	}	
+	function brushend() {
+		document.getElementById("chselect").value="0";
+		if (brush.empty()) svg.selectAll("circle").attr("class", function(d) {
+		return "none";
+		});
+		drawparallel();
+		drawrect();
+	}
+}
+function drawparallel(){
+	var line = d3.svg.line(),
+    axis = d3.svg.axis().orient("left"),
+    foreground;
+	var px = d3.scale.ordinal().domain(ptraits).rangePoints([50, 1750]);
+	traits.forEach(function(p) {pbrush[p] = d3.svg.brush().y(pscale[p]).on("brush",pbrushfun);});
+	if (document.getElementById("parallelsvg")){
+		var t=document.getElementById("parallelsvg");
+		t.parentNode.removeChild(t);
+	}
+	var svg = d3.select("#paralleltd").append("svg")
+      .attr("width", 1800)
+      .attr("height",500)
+	  .attr("id","parallelsvg");
+	 
+	foreground = svg.append("g")
+		.attr("class", "foreground")
+		.selectAll("path")
+		.data(csvdata)
+		.enter()
+		.append("path")
+		.attr("d",path)
+		.attr("class", function(d) { 
+						if (d.chosen) return d.kind;
+						else return "none"});
+	var trait = svg.selectAll(".trait")
+			.data(traits)
+			.enter()
+			.append("g")
+			.attr("class","trait")
+			.attr("transform", function(d){return "translate(" + px(d) + ")";})
+			.call(d3.behavior.drag()
+				.origin(function(d) { return {x: px(d)}; })
+				.on("dragstart", dragstart)
+				.on("drag", drag)
+				.on("dragend", dragend));
+	trait.append("g")
+		.attr("class", "paxis")
+		.each(function(d) { d3.select(this).call(axis.scale(pscale[d])); })
+		.append("text")
+		.attr("text-anchor", "middle")
+		.attr("y", 20)
+		.text(function(d,i) {return document.getElementById("xselect").options[i].text;});
+	
+	trait.append("g")
+      .attr("class", "brush")
+      .each(function(d) { d3.select(this).call(pbrush[d]); })
+	  .selectAll("rect")
+      .attr("x", -8)
+      .attr("width", 16);
+	function dragstart(d) {
+		i = ptraits.indexOf(d);
+	}
+	function drag(d) {
+		px.range()[i] = d3.event.x;
+		ptraits.sort(function(a, b) { return px(a) - px(b); });
+		trait.attr("transform", function(d) { return "translate(" + px(d) + ")"; });
+		foreground.attr("d", path);
+	}
+	function dragend(d) {
+		px.domain(ptraits).rangePoints([50,1750]);
+		var t = d3.transition().duration(500);
+		t.selectAll(".trait").attr("transform", function(d) { return "translate(" + px(d) + ")"; });
+		t.selectAll(".foreground path").attr("d", path);
+	}
+	function path(d) {
+		return line(ptraits.map(function(p) { return [px(p), pscale[p](d[p])]; }));
+	}
+	function pbrushfun(){
+		var actives = ptraits.filter(function(p) { return !pbrush[p].empty(); });
+		var extents = actives.map(function(p) { return pbrush[p].extent(); });
+		foreground.attr("class",function(d){
+								var bool=actives.length>0?true:false;
+								for (var i=0;i<extents.length;i++){
+									if (extents[i][0]>d[actives[i]]||extents[i][1]<d[actives[i]]) bool=false;
+								}
+								if (bool) d.chosen=1; else d.chosen=0;
+								if (d.chosen) return d.kind;
+									else return "none";
+								});
+		drawsplom();
+		drawrect();
+	}
+	
+}
+function drawrect(){
+	if (document.getElementById("rectsvg")){
+		var t=document.getElementById("rectsvg");
+		t.parentNode.removeChild(t);
+	}
+	var svg = d3.select("#recttd").append("svg")
+      .attr("width", 500)
+      .attr("height",500)
+	  .attr("id","rectsvg");
+	var num=[0,0,0];
+	for (var i=0;i<csvdata.length;i++){
+		if (csvdata[i].chosen){
+			switch(csvdata[i].kind){
+				case "kind1":num[0]++;break;
+				case "kind2":num[1]++;break;
+				case "kind3":num[2]++;break;
+			}
+		}
+	}
+	var rscale=d3.scale.linear().domain([0,72]).range([0, 400]),
+	rrscale=d3.scale.linear().domain([0,72]).range([400, 0]);
+	var rect=svg.selectAll("rect")
+		.data(num)
+		.enter()
+		.append("rect")
+		.attr("x",function(d,i){return 150*i;})
+		.attr("y",function(d,i){return 450-rscale(num[i]);})
+		.attr("width",100)
+		.attr("height",function(d,i){return rscale(num[i]);})
+		.attr("class",function(d,i){return "kind"+(i+1);})
+		.on("mouseover",function(d,i){
+			d3.select(this)
+			.transition()
+			.attr("opacity","0.5");})
+		.on("mouseleave",function(d,i){
+			d3.select(this)
+			.transition()
+			.attr("opacity","1");})
+		.on("click",function(d,i){
+			for (var k=0;k<csvdata.length;k++)
+				if (csvdata[k].kind!="kind"+(i+1)) csvdata[k].chosen=0;
+			ready();
+			});
+	svg.selectAll("text.none")
+		.data(num)
+		.enter()
+		.append("text")
+		.attr("text-anchor", "middle")
+		.attr("x",function(d,i){return 150*i+50;})
+		.attr("y", 480)
+		.text(function(d,i) {return "kind"+(i+1);});
+	svg.selectAll("text.none")
+		.data(num)
+		.enter()
+		.append("text")
+		.attr("text-anchor", "middle")
+		.attr("x",function(d,i){return 150*i+50;})
+		.attr("y",function(d,i){return 420-rscale(num[i]);})
+		.text(function(d,i) {return ""+d;});
+	var axis = d3.svg.axis().orient("right");
+	svg.append("g")
+      .attr("transform", "translate(450,50)")
+      .call(axis.scale(rrscale));
+}
+function ready(){
+	drawsplom();
+	drawparallel();
+	drawrect();
+}
+function init(){
+	d3.csv("wine.csv", function(d){
+		return {
+			kind : "kind"+d.Wine,
+			1:+d.A1,
+			2:+d.A2,
+			3:+d.A3,
+			4:+d.A4,
+			5:+d.A5,
+			6:+d.A6,
+			7:+d.A7,
+			8:+d.A8,
+			9:+d.A9,
+			10:+d.A10,
+			11:+d.A11,
+			12:+d.A12,
+			13:+d.A13,
+			chosen:0
+		};
+	},function(error,data){
+		csvdata=data;
+		traits.forEach(
+			function(trait) {
+				var value = function(d) { return d[trait]; },
+				domain = [d3.min(data, value), d3.max(data, value)];
+				xscale[trait] = d3.scale.linear().domain(domain).range([50, 450]);
+				yscale[trait] = d3.scale.linear().domain(domain).range([450, 50]);
+				pscale[trait] = d3.scale.linear().domain(domain).range([450, 50]);
+			});
+		ready();
+	}
+	);
+}
+function choose(){
+	var n="kind"+document.getElementById("chselect").value;
+	for (i in csvdata){
+		if (csvdata[i].kind==n) csvdata[i].chosen=1;
+		else csvdata[i].chosen=0;
+	}
+	ready();
+}
+
+
+</script>
+</html>

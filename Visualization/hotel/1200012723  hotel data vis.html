@@ -1,0 +1,656 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>hotel data</title>
+<style type="text/css">
+body {font-size: 300%;zoom:0.5;}
+</style>
+</head>
+
+
+<body onload="change1(),init()">
+<script language="javascript"	src="d3.js"></script>
+<form>
+数据范围
+<select id="select1"  onchange="change1()">
+<option value="whole">全年</option>
+<option value="conventions">会议</option>
+<option value="others">手动选择</option>
+</select>
+<br />
+一月<input type="checkbox" name="check1" id="ch1" onclick="checkcheckbox()">
+二月<input type="checkbox" name="check1" id="ch2" onclick="checkcheckbox()">
+三月<input type="checkbox" name="check1" id="ch3" onclick="checkcheckbox()">
+四月<input type="checkbox" name="check1" id="ch4" onclick="checkcheckbox()">
+五月<input type="checkbox" name="check1" id="ch5" onclick="checkcheckbox()">
+六月<input type="checkbox" name="check1" id="ch6" onclick="checkcheckbox()">
+七月<input type="checkbox" name="check1" id="ch7" onclick="checkcheckbox()">
+八月<input type="checkbox" name="check1" id="ch8" onclick="checkcheckbox()">
+九月<input type="checkbox" name="check1" id="ch9" onclick="checkcheckbox()">
+十月<input type="checkbox" name="check1" id="ch10" onclick="checkcheckbox()">
+十一月<input type="checkbox" name="check1" id="ch11" onclick="checkcheckbox()">
+十二月<input type="checkbox" name="check1" id="ch12" onclick="checkcheckbox()">
+</form>
+<form>
+详细数据
+<select id="select2">
+<option value="sex">性别</option>
+<option value="nation">游客来源</option>
+<option value="customer">顾客类型</option>
+<option value="book">预约类型</option>
+<option value="age">年龄</option>
+<option value="rate">入住率</option>
+<option value="length">入住时间</option>
+<option value="price">房间价格</option>
+</select>
+<input type="button" value="加入折线图" id="add" onclick="addto()">
+<input type="button" value="清空折线图" id="clear" onclick="deleteall()">
+</form>
+<table border="0">
+<tr>
+	<th colspan=6>总统计数据</th>
+</tr>
+<tr>
+	<th>性别分布</th>
+	<th>游客类型</th>
+	<th>预定方式</th>
+	<th>年龄分布</th>
+	<th>游客来源</th>
+	<th>其他数据</th>
+</tr>
+<tr>
+	<td id="sextd"></td>
+	<td id="typetd"></td>
+	<td id="booktd"></td>
+	<td id="agetd"></td>
+	<td id="nationtd"></td>
+	<td id="elsetd"></td>
+</tr>
+<tr>
+	<th colspan=3>趋势图</th>
+</tr>
+<tr>
+	<td id="viptd" colspan=3></td>
+</tr>
+</table>
+<script>
+//一些初始设置
+var data=[[26,69,7,0,20,1,3,78,22,70,20,10,2,25,48,25,163,1.65,67,0],
+[21,70,6,0,15,0,10,80,20,70,18,12,2,27,49,22,167,1.71,82,0],
+[26,77,3,0,14,0,6,85,15,75,19,6,4,37,42,17,166,1.65,70,0],
+[28,71,6,0,15,8,0,86,14,74,17,9,2,35,48,15,174,1.91,83,1],
+[20,37,23,8,23,6,3,85,15,69,27,4,2,25,54,19,152,1.90,74,1],
+[20,36,14,6,27,4,13,87,13,68,27,5,1,25,55,19,155,2.0,77,1],
+[20,39,19,6,22,6,8,70,30,74,19,7,1,27,53,19,145,1.54,56,0],
+[20,39,14,4,30,4,9,76,24,75,19,6,2,28,51,19,170,1.60,62,0],
+[20,55,9,2,27,2,5,87,13,68,26,6,2,24,55,19,157,1.73,90,1],
+[40,60,6,12,19,1,2,85,15,68,27,5,4,30,46,20,174,1.82,92,1],
+[15,68,8,0,19,0,5,87,13,64,21,15,2,24,55,19,165,1.66,78,1],
+[40,72,8,0,17,1,2,80,20,75,15,10,5,30,43,22,156,1.44,55,1]];
+var data1=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+var data2=[0,0,0,0,0,0,0,0,0,0,0,0];
+var used=[0,0,0,0,0,0,0,0,0,0,0,0];
+var added=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+var sexdata=[0,0];
+var sexname=["male","female"];
+var typedata=[0,0]
+var typename=["businessmen","tourists"]
+var bookdata=[0,0,0];
+var bookname=["DR","agency","AC"]
+var nationdata=[0,0,0,0,0,0]
+var nationname=["local","USA","SA","EU","MEA","ASIA"]
+var agedata=[0,0,0,0]
+var agename=["<20","20~35","35~55",">55"]
+var elsedata=[0,162,0,1.72,0,73.84];
+var elsename=["price","avg","length","avg","occu","avg"]
+var makecolor=d3.scale.category20();
+var color=[];	
+for (var i=0;i<20;i++) color[i]=makecolor(i);
+var xScale = d3.scale.linear()
+					.domain([0,12])
+					.range([100,1550]);
+var yScale = d3.scale.linear()
+					.domain([100,0])
+					.range([50,1000]);
+var pie=d3.layout.pie();
+var arc=d3.svg.arc()	
+	.innerRadius(0)
+	.outerRadius(200);
+//解析详细数据下拉框
+function addto(){
+	var a=document.getElementById("select2").value;
+	switch(a){
+		case "sex":added[0]=1;break;
+		case "nation":for (var p=1;p<=6;p++) added[p]=1;break;
+		case "customer":for (var p=7;p<=8;p++) added[p]=1;break;
+		case "book":for (var p=9;p<=11;p++) added[p]=1;break;
+		case "age":for (var p=12;p<=15;p++) added[p]=1;break;
+		case "price":added[16]=1;break;
+		case "length":added[17]=1;break;
+		case "rate":added[18]=1;break;
+	}
+	change2();
+}
+//清空折线图
+function deleteall(){
+	for (var i=0;i<19;i++) added[i]=0;
+	init();
+}
+//用于解析数据范围下拉框
+function change1(){
+	var a=document.getElementById("select1").value;
+	switch(a){
+	case "whole": 
+		for (var i=1;i<=12;i++){
+			document.getElementById("ch"+i).checked=true;
+			document.getElementById("ch"+i).disabled=true;
+		}
+		break;
+	case "conventions":
+		for (var i=1;i<=12;i++){ 
+			if (data[i-1][19]==1){
+				document.getElementById("ch"+i).checked=true;
+				document.getElementById("ch"+i).disabled=true;
+				}
+				else{
+				document.getElementById("ch"+i).checked=false;
+				document.getElementById("ch"+i).disabled=true;
+				}
+		}
+		break;
+	case "others":
+		var tmp=document.getElementsByName("check1");
+		for (var i in tmp) tmp[i].disabled=false;
+	}
+	checkcheckbox();
+}
+//实时刷新折线图
+function change2(){
+	init();
+	for (var i=0;i<19;i++){
+		if (added[i]==1) drawgraph2(i);
+	}
+}
+//绘制上图
+function drawgraph1(){
+	cal();
+	drawsexpie();
+	drawtypepie();
+	drawbookpie();
+	drawnation();
+	drawage();
+	drawelse();
+}
+//绘制下图
+function drawgraph2(u){
+	var tmp=[];
+	var tmpcolor=color[u];
+	for (var i=0;i<12;i++) tmp[i]=data[i][u];
+	if (u==16) for (var i=0;i<12;i++) tmp[i]/=2.0;
+	if (u==17) for (var i=0;i<12;i++) tmp[i]*=50;
+	var line=d3.svg.line()
+		.interpolate("linear")
+		.x(function(d,i){return xScale(i+1);})
+		.y(function(d) {return yScale(d);});	
+	var vipsvg = d3.select("#vipsvg");
+		vipsvg.append("path")
+				.attr("d", line(tmp))
+				.style("fill","none")
+			.style("stroke-width",5)
+			.style("stroke",tmpcolor)
+			.style("stroke-opacity",1)
+			.attr("id","line"+u)
+			.on('mouseover', function() {
+									d3.select(this)
+									.transition()
+									.duration(500)
+									.style("stroke-opacity",0.5);
+									d3.select("#graph"+u)
+									.transition()
+									.attr("opacity","0.5");
+								})
+			.on('mouseout', function() {
+									d3.select(this)
+									.transition()
+									.duration(500)
+									.style("stroke-opacity",1);
+									d3.select("#graph"+u)
+									.transition()
+									.attr("opacity","1");
+								})
+			.on("click",function(){added[u]=0;change2();})
+	var points=vipsvg.selectAll("#none")
+				.data(tmp)
+				.enter()
+				.append("g")
+				.append('circle')
+				.attr('class', 'linecircle')
+				.attr('cx', line.x())
+				.attr('cy', line.y())
+				.attr('r', 6)
+				.attr("fill",function (d,i){if (used[i]==1) return "#000"; else return tmpcolor;})
+				.attr("name",function (d,i){return "point"+(i+1);})
+				.on('mouseover', function() {
+									d3.select(this)
+									.transition()
+									.duration(500)
+									.attr('r', 10);
+									d3.select("#graph"+u)
+									.transition()
+									.attr("opacity","0.5");
+								})
+				.on('mouseout', function() {
+									d3.select(this)
+									.transition()
+									.duration(500)
+									.attr('r', 6);
+									d3.select("#graph"+u)
+									.transition()
+									.attr("opacity","1");
+								})
+				.on("click",function(d,i){
+								document.getElementById("select1").value="others";
+								for (var k=1;k<=12;k++){
+									document.getElementById("ch"+k).checked=false;
+									document.getElementById("ch"+k).disabled=false;
+								}
+								document.getElementById("ch"+(i+1)).checked=true;
+								checkcheckbox();
+								});
+				
+}
+//实时刷新上图
+function checkcheckbox(){
+	for (var i=1;i<=12;i++)
+		if (document.getElementById("ch"+i).checked)
+			used[i-1]=1;
+		else used[i-1]=0;
+	drawgraph1();
+	change2();
+}
+//计算用于上图的数据
+function cal(){
+	var cnt=0;
+	for (var i=0;i<20;i++) data1[i]=0;
+	for (var i=0;i<12;i++){
+		if (used[i]==1){
+			for (var j=0;j<20;j++)
+				data1[j] = data1[j]+data[i][j];
+			cnt=cnt+1;	
+		}
+	}
+	for (var i in data1) data1[i]=1.0*data1[i]/cnt;
+	sexdata[1]=data1[0];sexdata[0]=100-sexdata[1];
+	typedata[0]=data1[7];typedata[1]=data1[8];
+	for (var k=0;k<3;k++)bookdata[k]=data1[9+k];
+	for (var k=0;k<6;k++)nationdata[k]=data1[1+k];
+	for (var k=0;k<4;k++)agedata[k]=data1[k+12];
+	elsedata[0]=data1[16];elsedata[2]=data1[17];elsedata[4]=data1[18];
+}
+//用于初始化下图
+function init(){
+	if (document.getElementById("vipsvg")){
+		var t=document.getElementById("vipsvg");
+		t.parentNode.removeChild(t);
+	}
+	var vipsvg = d3.select("#viptd")
+			.append("svg")
+			.attr("width",1600)
+			.attr("height",1100)
+			.attr("id","vipsvg");
+	var xAxis = d3.svg.axis()
+            .scale(xScale)	
+            .orient("bottom").ticks(12);
+	var xBar=vipsvg.append("g")
+            .attr("class", "axis")
+            .attr("transform", "translate(0,1000)")
+            .call(xAxis);
+	var yAxis = d3.svg.axis()
+            .scale(yScale)
+            .orient("left").ticks(10);
+	var yBar=vipsvg.append("g")
+			.attr("class", "axis")
+			.attr("transform", "translate(100,0)")
+			.call(yAxis);
+}
+//绘制3个饼图
+function drawsexpie(){
+	if (document.getElementById("sexsvg")){
+		var t=document.getElementById("sexsvg");
+		t.parentNode.removeChild(t);
+	}
+	var sexsvg = d3.select("#sextd")
+			.append("svg")
+			.attr("width",500)
+			.attr("height",500)
+			.attr("id","sexsvg");
+
+	var arcs=sexsvg.selectAll("g")
+	.data(pie(sexdata))
+	.enter()
+	.append("g")
+	.attr("transform","translate(250,250)")
+	
+	arcs.append("path")
+	.attr("fill",function(d,i){
+			if (i==0)
+			return color[0];
+			else
+			return color[19];})
+	.attr("d",function(d){
+		return arc(d);})
+	.attr("id","graph0");
+	
+	arcs.append("text")
+		.attr("transform",function(d){
+			return "translate("+arc.centroid(d)+")";})
+		.attr("text-anchor","middle")
+		.text(function(d,i){return sexname[i]+" "+d.value.toFixed(2);});
+		
+	arcs.on("mouseover",function(d){
+		d3.select(this)
+		.transition()
+		.attr("opacity","0.5");
+		d3.select("#line0")
+		.transition()
+		.attr("opacity","0.5");
+		})
+		.on("mouseleave",function(d){
+		d3.select(this)
+		.transition()
+		.attr("opacity","1");
+		d3.select("#line0")
+		.transition()
+		.attr("opacity","1");
+		})
+		.on("click",function(d){
+			added[0]=1-added[0];
+			change2();
+		});
+
+}
+function drawtypepie(){
+	if (document.getElementById("typesvg")){
+		var t=document.getElementById("typesvg");
+		t.parentNode.removeChild(t);
+	}
+	var typesvg = d3.select("#typetd")
+			.append("svg")
+			.attr("width",500)
+			.attr("height",500)
+			.attr("id","typesvg");
+
+	var arcs=typesvg.selectAll("g")
+	.data(pie(typedata))
+	.enter()
+	.append("g")
+	.attr("transform","translate(250,250)")
+	
+	arcs.append("path")
+	.attr("fill",function(d,i){
+	return color[i+7];})
+	.attr("d",function(d){
+		return arc(d);})
+	.attr("id",function(d,i){return "graph"+(i+7);});
+	
+	arcs.append("text")
+		.attr("transform",function(d){
+			return "translate("+arc.centroid(d)+")";})
+		.attr("text-anchor","middle")
+		.text(function(d,i){return typename[i]+" "+d.value.toFixed(2);});
+		
+	arcs.on("mouseover",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","0.5");
+		d3.select("#line"+(i+7))
+		.transition()
+		.attr("opacity","0.5");
+		})
+		.on("mouseleave",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","1");
+		d3.select("#line"+(i+7))
+		.transition()
+		.attr("opacity","1");
+		})
+		.on("click",function(d,i){
+			added[i+7]=1-added[i+7];
+			change2();
+		});
+}
+function drawbookpie(){
+	if (document.getElementById("booksvg")){
+		var t=document.getElementById("booksvg");
+		t.parentNode.removeChild(t);
+	}
+	var booksvg = d3.select("#booktd")
+			.append("svg")
+			.attr("width",500)
+			.attr("height",500)
+			.attr("id","booksvg");
+
+	var arcs=booksvg.selectAll("g")
+	.data(pie(bookdata))
+	.enter()
+	.append("g")
+	.attr("transform","translate(250,250)")
+	
+	arcs.append("path")
+	.attr("fill",function(d,i){
+	return color[i+9];})
+	.attr("d",function(d){
+		return arc(d);})
+	.attr("id",function(d,i){return "graph"+(i+9);});
+	
+	arcs.append("text")
+		.attr("transform",function(d){
+			return "translate("+arc.centroid(d)+")";})
+		.attr("text-anchor","middle")
+		.text(function(d,i){return bookname[i]+" "+d.value.toFixed(2);});
+		
+	arcs.on("mouseover",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","0.5");
+		d3.select("#line"+(i+9))
+		.transition()
+		.attr("opacity","0.5");
+		})
+		.on("mouseleave",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","1");
+		d3.select("#line"+(i+9))
+		.transition()
+		.attr("opacity","1");
+		})
+		.on("click",function(d,i){
+			added[i+9]=1-added[i+9];
+			change2();
+		});
+}
+//绘制3个直方图
+function drawnation(){
+	if (document.getElementById("nationsvg")){
+		var t=document.getElementById("nationsvg");
+		t.parentNode.removeChild(t);
+	}
+	var nationsvg = d3.select("#nationtd")
+		.append("svg")
+		.attr("width",500)
+		.attr("height",500)
+		.attr("id","nationsvg");
+	var max=d3.max(nationdata);
+	var rects=nationsvg.selectAll("rect")
+		.data(nationdata)
+		.enter()
+		.append("rect")
+		.attr("x",function(d,i){return i*82+5;})
+		.attr("y",function(d){return 450-d*1.0/100*500})
+		.attr("width",80)
+		.attr("height",function(d){return d*1.0/100*500})
+		.attr("fill", function(d,i) {return color[i+1]})
+		.attr("id",function(d,i){return "graph"+(i+1);});
+	nationsvg.selectAll(".none")
+		.data(nationdata)
+		.enter()
+		.append("text")
+		.text(function(d) {return d.toFixed(2)+"%";})
+		.attr("x",function(d,i){return i*82+20;})
+		.attr("y",function(d){return 445-d*1.0/100*500})
+	nationsvg.selectAll(".none")
+		.data(nationname)
+		.enter()
+		.append("text")
+		.text(function(d) {return d;})
+		.attr("x",function(d,i){return i*82+20;})
+		.attr("y",function(d){return 470});
+		
+	rects.on("mouseover",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","0.5");
+		d3.select("#line"+(i+1))
+		.transition()
+		.attr("opacity","0.5");
+		})
+		.on("mouseleave",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","1");
+		d3.select("#line"+(i+1))
+		.transition()
+		.attr("opacity","1");
+		})
+		.on("click",function(d,i){
+			added[i+1]=1-added[i+1];
+			change2();
+		});
+}
+function drawage(){
+	if (document.getElementById("agesvg")){
+		var t=document.getElementById("agesvg");
+		t.parentNode.removeChild(t);
+	}
+	var agesvg = d3.select("#agetd")
+		.append("svg")
+		.attr("width",500)
+		.attr("height",500)
+		.attr("id","agesvg");
+	var max=d3.max(agedata);
+	var rects=agesvg.selectAll("rect")
+		.data(agedata)
+		.enter()
+		.append("rect")
+		.attr("x",function(d,i){return i*110+5;})
+		.attr("y",function(d){return 445-d*1.0/100*500})
+		.attr("width",100)
+		.attr("height",function(d){return d*1.0/100*500})
+		.attr("fill", function(d,i) {return color[i+12]})
+		.attr("id",function(d,i){return "graph"+(i+12);});
+	agesvg.selectAll(".none")
+		.data(agedata)
+		.enter()
+		.append("text")
+		.text(function(d) {return d.toFixed(2)+"%";})
+		.attr("x",function(d,i){return i*110+25;})
+		.attr("y",function(d){return 440-d*1.0/100*500})
+	agesvg.selectAll(".none")
+		.data(agename)
+		.enter()
+		.append("text")
+		.text(function(d) {return d;})
+		.attr("x",function(d,i){return i*110+30;})
+		.attr("y",function(d){return 470});
+		
+	rects.on("mouseover",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","0.5");
+		d3.select("#line"+(i+12))
+		.transition()
+		.attr("opacity","0.5");
+		})
+		.on("mouseleave",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","1");
+		d3.select("#line"+(i+12))
+		.transition()
+		.attr("opacity","1");
+		})
+		.on("click",function(d,i){
+			added[i+12]=1-added[i+12];
+			change2();
+		});
+}
+function drawelse(){
+	if (document.getElementById("elsesvg")){
+		var t=document.getElementById("elsesvg");
+		t.parentNode.removeChild(t);
+	}
+	var elsesvg = d3.select("#elsetd")
+		.append("svg")
+		.attr("width",500)
+		.attr("height",500)
+		.attr("id","elsesvg");
+	var tmp=[];
+	tmp[0]=elsedata[0];
+	tmp[1]=elsedata[1];
+	tmp[2]=elsedata[2]*100;
+	tmp[3]=elsedata[3]*100;
+	tmp[4]=elsedata[4]*2;
+	tmp[5]=elsedata[5]*2;
+	var tmpid=[16,16,17,17,18,18]
+	var max=d3.max(tmp);
+	var rects=elsesvg.selectAll("rect")
+		.data(tmp)
+		.enter()
+		.append("rect")
+		.attr("x",function(d,i){return i*82+5;})
+		.attr("y",function(d){return 450-d*1.0/400*500})
+		.attr("width",80)
+		.attr("height",function(d){return d*1.0/400*500})
+		.attr("fill", function(d,i) {return color[tmpid[i]]})
+		.attr("id",function(d,i){return "graph"+tmpid[i]});
+	elsesvg.selectAll(".none")
+		.data(tmp)
+		.enter()
+		.append("text")
+		.text(function(d,i) {return elsedata[i].toFixed(2);})
+		.attr("x",function(d,i){return i*82+20;})
+		.attr("y",function(d){return 445-d*1.0/400*500})
+	elsesvg.selectAll(".none")
+		.data(elsename)
+		.enter()
+		.append("text")
+		.text(function(d) {return d;})
+		.attr("x",function(d,i){return i*82+20;})
+		.attr("y",function(d){return 470});
+	
+	rects.on("mouseover",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","0.5");
+		d3.select("#line"+tmpid[i])
+		.transition()
+		.attr("opacity","0.5");
+		})
+		.on("mouseleave",function(d,i){
+		d3.select(this)
+		.transition()
+		.attr("opacity","1");
+		d3.select("#line"+tmpid[i])
+		.transition()
+		.attr("opacity","1");
+		})
+		.on("click",function(d,i){
+			added[tmpid[i]]=1-added[tmpid[i]];
+			change2();
+		});
+}
+</script>
+</body>
+</html>

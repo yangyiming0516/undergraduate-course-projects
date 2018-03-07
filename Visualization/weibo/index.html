@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+<title>Visualization Final Project</title>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=TIkLrVZMx4iHYnFKMTf58Apk"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/Heatmap/2.0/src/Heatmap_min.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/RectangleZoom/1.2/src/RectangleZoom_min.js"></script>
+<script type="text/javascript" src="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.js"></script>
+<script language="javascript"	src="d3.js"></script>
+<link rel="stylesheet" href="http://api.map.baidu.com/library/DrawingManager/1.4/src/DrawingManager_min.css" />
+<style type="text/css">
+
+        #workspace{
+            width: 100%;
+            height: 600px;
+        }
+		#time{
+            width: 100%;
+            height: 400px;
+        }
+		
+		#timeline{
+            width: 90%;
+            height: 100%;
+			float: left;
+        }
+		#timeshow{
+            width: 10%;
+            height: 100%;
+			float: left;
+        }
+
+        #mapshow{
+            width: 65%;
+            height: 100%;
+            background-color: antiquewhite;
+            float: left;
+        }
+
+        #operator {
+            width: 35%;
+            height: 100%;
+            background-color: cadetblue;
+            float: left;
+        }
+        
+        #menu{
+            width: 100%;
+            height: 10%;
+        }
+        #chart{
+            width: 100;
+            height: 90%;
+        }
+
+		#timetext{
+            width: 100%;
+            height: 40%;
+        }
+        #goover{
+            width: 100;
+            height: 20%;
+        }
+		
+		svg {
+		font: 10px sans-serif;
+		}
+		
+		.area {
+		fill: steelblue;
+		clip-path: url(#clip);
+		}
+		
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #000;
+		  shape-rendering: crispEdges;
+		}
+
+		.brush .extent {
+		  stroke: #fff;
+		  fill-opacity: .125;
+		  shape-rendering: crispEdges;
+		}
+
+        
+</style>
+</head>
+<script>
+	var makecolor=d3.scale.category20b();
+	var timex=1400,timey=250;
+	var stopnum;
+	var time;
+	var L,R,sL,sR;
+	var unix = +(new Date(2014,8,1,0,0,0));
+	var lng,lat,exp,expnum;
+	var timecnt=[];
+	var existheat=0;
+	var points = [];
+	var expindex=[],ecnt=[];
+	var map;
+	var pn,pe;
+	var latL=0;latR=200;lngL=0;lngR=200;
+	var radius=15;
+	var expdata=[];
+	var color=[];
+</script>
+<body>
+	<div id = "workspace">
+        <div id = "mapshow"></div>
+        <div id = "operator">
+            <div id="menu">
+			<input type="button" value="清除框选" onclick="clearAll(0)"/><div id="text"></div>
+			</div>
+            <div id="chart"></div>
+        </div>
+    </div>
+	<div id="time">
+		<div id="timeline"></div>
+		<div id="timeshow">
+		<div id="timetext"></div>
+		<div id="goover">
+		播放速度 <input type="text" id="speed"/>小时/次(默认10)
+		<br>
+		<button type="button" onclick="play()">动画效果</button>
+		<button type="button" onclick="stop()">停止</button>
+		</br>
+		<button type="button" onclick="zoom()">放大所选区域</button>
+		<button type="button" onclick="zoomback()">复原</button>
+		</div>
+		</div>
+	</div>
+	
+</body>
+<script>
+	var speed=10;
+	var x=d3.time.scale().range([0,timex]);
+	var y=d3.scale.linear().range([timey,0]);
+	var xAxis=d3.svg.axis().scale(x).orient("bottom");
+	var brush = d3.svg.brush().x(x).on("brushend",choosetime);
+	
+	var area=d3.svg.area().interpolate("monotone")
+		.x(function(d,i){return x(new Date(i*3600000+unix));})
+		.y0(timey)
+		.y1(function(d){return y(d);})
+	
+	var svg = d3.select("#timeline").append("svg")
+		.attr("width", timex+100)
+		.attr("height", timey+100);
+	
+	var timeline = svg.append("g");
+	
+	
+	function zoom(){
+		if (!brush.empty()){
+			x.domain(brush.extent());
+			timeline.select(".area").attr("d",area);
+			timeline.select(".x.axis").call(xAxis);
+			brush.clear();
+			timeline.select(".x.brush").call(brush);
+		}
+	}
+	
+	function zoomback(){
+		x.domain([new Date(2014,8,1,0,0,0),new Date(2014,9,1,0,0,0)]);
+		brush.clear();
+		timeline.select(".x.axis").call(xAxis);
+		timeline.select(".area").attr("d",area);
+		brush.extent([L,R]);
+		timeline.select(".x.brush").call(brush);
+	}
+	
+	function choosetime(){
+		/*if (!brush.empty()){
+			x.domain(brush.extent());
+			//timeline.select(".area").attr("d",area);
+			timeline.select(".x.axis").call(xAxis);
+		}
+		else{
+			x.domain([new Date(2014,8,1,0,0,0),new Date(2014,9,1,0,0,0)]);
+			//timeline.select(".area").attr("d",area);
+			timeline.select(".x.axis").call(xAxis);
+		}*/
+		if (!brush.empty()){L=brush.extent()[0];R=brush.extent()[1];}
+		else {L=x.domain()[0];R=x.domain()[1];}
+		points=[];
+		for (var i in time){
+			var tmp=new Date(time[i]*3600000+unix);
+			if (L<=tmp&&tmp<=R)
+				points.push(new BMap.Point(lng[i], lat[i]));
+		}
+		drawheat();
+		points=[];
+		writetime();
+		search();
+	}
+
+	
+	d3.csv("data2.csv",function(error,data){
+		exp=data.map(function(d){return +d.expression;});
+		d3.csv("exp.csv",function(error,d){
+		expindex=d.map(function(d){return d.exp});
+		expnum=expindex.length;
+		for (var i in expindex){
+			color[i]=makecolor(Math.ceil(i*49003/42649));
+		}
+		})
+	
+	
+	d3.csv("data.csv",function(error,data){
+	time=data.map(function(d){return Math.floor((d.time*1000-unix)/3600000);});
+	lng=data.map(function(d){return +d.longitude;});
+	lat=data.map(function(d){return +d.latitude;});
+	x.domain([new Date(2014,8,1,0,0,0),new Date(2014,9,1,0,0,0)]);
+	L=x.domain()[0];R=x.domain()[1];
+	for (var i=0;i<720;i++) timecnt[i]=0;
+	for (var i in time){
+		timecnt[time[i]]++;
+	}
+	y.domain(d3.extent(timecnt));
+	
+	timeline.append("defs").append("clipPath")
+    .attr("id", "clip")
+	.append("rect")
+    .attr("width", timex)
+    .attr("height", timey);
+	
+	timeline.append("path")
+		.datum(timecnt)
+		.attr("class","area")
+		.attr("d",area);
+	
+	timeline.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + timey + ")")
+      .call(xAxis);
+	timeline.append("g")
+      .attr("class", "x brush")
+      .call(brush)
+	  .selectAll("rect")
+      .attr("y", -5)
+      .attr("height", timey + 5);
+	  
+	 map = new BMap.Map("mapshow");    // 创建Map实例
+        map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);  // 初始化地图,设置中心点坐标和地图级别
+        map.setCurrentCity("北京");          // 设置地图显示的城市 此项是必须设置的
+        map.enableScrollWheelZoom(true);  
+	/*	var myDrag = new BMapLib.RectangleZoom(map, {
+		followText: "拖拽鼠标进行操作"
+		});*/
+		
+	//------ add overlay drawer-------
+		overlays = [];
+		var overlaycomplete = function(e){
+			overlays.push(e.overlay);
+			var overlay_points = e.overlay.Cm;
+			var p1 = overlay_points[1];
+			var p2 = overlay_points[3];
+			lngL=Math.min(p1.lng,p2.lng);latL=Math.min(p1.lat,p2.lat);
+			lngR=Math.max(p1.lng,p2.lng);latR=Math.max(p1.lat,p2.lat);
+			clearAll(1);
+			search();
+		};
+
+		var styleOptions = {
+			strokeColor:"blue",    //边线颜色。
+			fillColor:"blue",      //填充颜色。当参数为空时，圆形将没有填充效果。
+			strokeWeight: 3,       //边线的宽度，以像素为单位。
+			strokeOpacity: 0.8,	   //边线透明度，取值范围0 - 1。
+			fillOpacity: 0.6,      //填充的透明度，取值范围0 - 1。
+			strokeStyle: 'solid' //边线的样式，solid或dashed。
+		}
+		//实例化鼠标绘制工具
+		var drawingManager = new BMapLib.DrawingManager(map, {
+			isOpen: false, //是否开启绘制模式
+			enableDrawingTool: true, //是否显示工具栏
+			drawingToolOptions: {
+				anchor: BMAP_ANCHOR_TOP_RIGHT, //位置
+				offset: new BMap.Size(5, 5), //偏离值
+				scale: 0.5 //工具栏缩放比例
+			},
+			/*
+			circleOptions: styleOptions, //圆的样式
+			polylineOptions: styleOptions, //线的样式
+			polygonOptions: styleOptions, //多边形的样式
+			*/
+			rectangleOptions: styleOptions //矩形的样式
+		});
+		//添加鼠标绘制工具监听事件，用于获取绘制结果
+		drawingManager.addEventListener('overlaycomplete', overlaycomplete);	
+	
+	
+	 for (var i in time)
+	  points.push(new BMap.Point(lng[i], lat[i]));
+	  drawheat();
+	  search();
+	  writetime();
+   	 });
+	})
+	
+	function clearAll(d) {
+		if (d==1&&overlays.length>1){
+		var tmp=overlays[overlays.length-1];
+		for (var i=0;i<overlays.length-1;i++)
+		map.removeOverlay(overlays[i]);
+		overlays=[];
+		overlays.push(tmp);
+		}
+		if (d==0){
+		for (var i=0;i<overlays.length;i++)
+		map.removeOverlay(overlays[i]);
+		overlays=[];
+		latL=0;latR=200;lngL=0;lngR=200;
+		search();
+		}
+	}
+	
+	function writetime(){
+		document.getElementById("timetext").innerHTML="from"+"</br>"+L+"</br>"+"to"+"</br>"+R;
+	}
+	
+	function drawheat(){
+			if (existheat==1)
+				map.removeOverlay(heatmapOverlay);
+            heatmapOverlay = new BMapLib.HeatmapOverlay({"radius":radius});
+            map.addOverlay(heatmapOverlay);
+			existheat=1;
+            heatmapOverlay.setDataSet({data:points,max:100});
+            function setGradient(){
+                var gradient = {};
+                var colors = document.querySelectorAll("input[type='color']");
+                colors = [].slice.call(colors,0);
+                colors.forEach(function(ele){
+                    gradient[ele.getAttribute("data-key")] = ele.value;
+                });
+                heatmapOverlay.setOptions({"gradient":gradient});
+                
+            }
+            heatmapOverlay.show();
+			
+	}
+	
+	
+	
+	function repeat(){
+		L=new Date(+L+3600000*speed);
+		R=new Date(+R+3600000*speed);
+		if (R>x.domain()[1]){
+			stop();
+			return;
+		}
+		brush.extent([L,R]);
+		timeline.select(".x.brush").call(brush);
+		choosetime();
+	}
+	function stop(){
+		clearInterval(stopnum);
+		brush.extent([sL,sR]);
+		timeline.select(".x.brush").call(brush);
+		//radius=50;
+		choosetime();
+	}
+	
+	function play(){
+		zoomback();
+		speed=+document.getElementById("speed").innerHTML;
+		if (speed==0) speed=10;
+		//radius=50;
+		sL=L;sR=R;
+		stopnum=setInterval("repeat()",250);
+	}
+
+	function search(){
+		var num=0;
+		for (var i=0;i<720;i++) timecnt[i]=0;
+		for (var i=0;i<=expnum;i++) ecnt[i]={"val":0,"num":i};
+		for (var i in time){
+			var tmp=new Date(time[i]*3600000+unix);
+			if (latL<lat[i]&&lat[i]<latR&&lngL<lng[i]&&lng[i]<lngR){
+				if (L<=tmp&&tmp<=R){
+					if (exp[i]!=0){
+						ecnt[exp[i]].val++;
+						}
+					num++;
+				}
+				timecnt[time[i]]++;
+			}
+		}
+		timeline.select(".area").attr("d",area);
+		document.getElementById("text").innerHTML="选定区域时间内有微博数量"+num;
+		ecnt.sort(function(a,b){return a.val<b.val?1:-1});
+		for (var i=0;i<5;i++){
+			expdata[i]=ecnt[i];
+		}
+
+		ecnt=[];
+		if (document.getElementById("svg1")){
+			var t=document.getElementById("svg1");
+			t.parentNode.removeChild(t);
+		}
+		
+		var expsvg=d3.select("#chart")
+			.append("svg")
+			.attr("width",600)
+			.attr("height",600)
+			.attr("id","svg1");
+		var max=0;
+		for (var i in expdata) if (expdata[i].val>max) max=expdata[i].val;
+		var rects=expsvg.selectAll("rect")
+		.data(expdata)
+		.enter()
+		.append("rect")
+		.attr("x",function(d,i){return i*110+50;})
+		.attr("y",function(d){return 480-d.val*400.0/max})
+		.attr("width",80)
+		.attr("height",function(d){return d.val*400.0/max})
+		.attr("fill", function(d,i) {return color[d.num-1];})
+		
+		expsvg.selectAll(".none")
+		.data(expdata)
+		.enter()
+		.append("text")
+		.text(function(d) {return ""+(d.val*10.0/num).toFixed(2)+"%";})
+		.attr("x",function(d,i){return i*110+75;})
+		.attr("y",function(d){return 460-d.val*400.0/max})
+		
+		expsvg.selectAll(".none")
+		.data(expdata)
+		.enter()
+		.append("text")
+		.text(function(d) {return ""+expindex[d.num-1];})
+		.attr("x",function(d,i){return i*110+75;})
+		.attr("y",function(d){return 500})
+		
+	}
+</script>
+</html>
