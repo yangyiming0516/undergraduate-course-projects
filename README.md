@@ -9,9 +9,13 @@ The game is written in C++ and WIN32 API.
 ## Visualization
 Some visualization implemented with D3.js. There are different designs for different datasets.
 ### hotel
+[demo link](http://vis.pku.edu.cn/course/Visualization_2014F/hotel/yangyiming/)
 #### dataset
 Guests data in a hotel during each month, including sex, booking type, age, source, etc. 
 #### design
 pie and histogram charts are used to display different attributes.  
 the data of each month can be selected.  
-the charts are interactive so different parts of the data can be added to the line chart to show the trend of each month.
+![pie&histogram charts](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/hotel/sample1.png)
+the charts are interactive so different parts of the data can be added to the line chart to show the trends of each month.  
+![trends](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/hotel/sample1.png)
+
