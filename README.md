@@ -64,3 +64,8 @@ see details in readme
 ### word segmentation(Chinese)
 simple implementation of normal perceptron (F-Score:0.913) and structured perceptron (F-Score:0.930)  
 see details in readme
+
+## Cluster
+K-means algorithm to cluster text and image data  
+the text cluster is written in C++, tf / tfidf are used as feature vectors  
+the image cluster is written in matlab, hsd / rgb features are used.
