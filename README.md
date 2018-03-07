@@ -71,3 +71,6 @@ the text cluster is written in C++, tf / tfidf are used as feature vectors
 the image cluster is written in matlab, hsd / rgb features are used.
 
 ## robot navigation
+naive and A-star algorithms to navigate a robot which has distance sensors to several directions. The robot goes to a set coordinate(the starting point is 0,0)  
+the code was run in a virtual environment to test at first, then ran on a robot provided by the course in a real room.  
+The virtual environment was not kept but there are some demo videos recorded.
