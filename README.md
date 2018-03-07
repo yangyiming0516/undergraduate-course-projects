@@ -62,3 +62,5 @@ smooth the counts with add-del or good-turing smoothing.
 tried add-del+backoff and good-turing + katz backoff  
 see details in readme
 ### word segmentation(Chinese)
+simple implementation of normal perceptron (F-Score:0.913) and structured perceptron (F-Score:0.930)  
+see details in readme
