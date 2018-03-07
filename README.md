@@ -52,4 +52,5 @@ see details on VAST challenge 08 [official site](https://www.cs.umd.edu/hcil/VAS
 ![sample1](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample1.png)  
 ![sample2](https://raw.githubusercontent.com/yangyiming0516/undergraduate-course-projects/master/Visualization/vast/sample2.png) 
 
-## 
+## Natural Language Processing
+some basic nlp problems such as Ngrams and Backoff Models, word segmentation(Chinese)
